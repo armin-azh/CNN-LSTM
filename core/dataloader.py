@@ -18,6 +18,7 @@ class StockPriceDataset(Dataset):
                  phase: str = "train"):
 
         self._data = None
+        self._true = None
         self._data_df = None
         data_df = pd.read_csv(filepath)
         data_df = data_df.drop(labels=np.where(data_df.isnull().any(axis=1) == True)[0], axis=0)
@@ -47,19 +48,26 @@ class StockPriceDataset(Dataset):
         self._data_df.loc[:, "Volume"] = self.z_score(self._data_df.loc[:, "Volume"], self._std_volume,
                                                       self._mean_volume)
 
+        self._true = self._data_df.loc[:, "Close"].to_numpy()
         self._data = self._data_df.copy().to_numpy()
 
         # fix the tensor
+        last_day_idx = time_step - 1
         n_sample = self._data.shape[0]
         c_sample = n_sample // time_step
         r_sample = n_sample % time_step
 
         c_temp = self._data[:c_sample * time_step, ...].reshape((-1, time_step, 5))
+        c_true_temp = self._true[:c_sample * time_step].reshape((-1, time_step))[:, last_day_idx]
+
         if r_sample > 0:
             r_temp = self._data[n_sample - time_step:, ...].reshape(-1, time_step, 5)
+            r_true_temp = self._true[n_sample - time_step:].reshape(-1, time_step)[:, last_day_idx]
             c_temp = np.concatenate([c_temp, r_temp], axis=0)
+            c_true_temp = np.concatenate([c_true_temp, r_true_temp], axis=0)
 
         self._data = c_temp
+        self._true = c_true_temp
 
     @staticmethod
     def z_score(col_val, std_val, mean_val):
@@ -80,10 +88,9 @@ class StockPriceDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        return self._data[idx, ...]
+        return self._data[idx, ...], self._true[idx]
 
 
 if __name__ == '__main__':
     filename = "/home/lezarus/Documents/Project/cnn_lstm/data/dataset/000001.SS.csv"
     dataset = StockPriceDataset(filepath=filename, time_step=10)
-
