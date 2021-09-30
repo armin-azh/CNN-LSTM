@@ -1,10 +1,49 @@
 from argparse import ArgumentParser, Namespace
+from core.dataloader import StockPriceDataset
+from core.trainer import CnnLstmTrainer
+
+from torch.utils.data import DataLoader
 
 
 def main(arguments: Namespace):
-
     if arguments.train:
-        pass
+        print(f"Training is starting ...")
+        print(f"[Train] Loading the dataset")
+        training_set = StockPriceDataset(train_size=arguments.train_size,
+                                         filepath=arguments.in_file,
+                                         test_size=arguments.test_size,
+                                         phase="train",
+                                         time_step=arguments.time_step)
+
+        test_set = StockPriceDataset(train_size=arguments.train_size,
+                                     filepath=arguments.in_file,
+                                     test_size=arguments.test_size,
+                                     phase="train",
+                                     time_step=arguments.time_step,
+                                     test=True)
+
+        print(f"[Train] Train: {len(training_set)} samples\tTest: {len(test_set)} samples")
+
+        train_loader = DataLoader(dataset=training_set,
+                                  batch_size=arguments.batch_size,
+                                  shuffle=False,
+                                  num_workers=arguments.n_worker)
+
+        test_loader = DataLoader(dataset=test_set,
+                                 batch_size=arguments.batch_size,
+                                 shuffle=False,
+                                 num_workers=arguments.n_worker)
+
+        trainer = CnnLstmTrainer(out_conv_filters=arguments.conv_filters,
+                                 conv_kernel=arguments.conv_kernel,
+                                 conv_padding=arguments.conv_padding,
+                                 pool_size=arguments.pool_size,
+                                 pool_padding=arguments.pool_padding,
+                                 lstm_hidden_unit=arguments.lstm_hid,
+                                 n_features=5, lr=arguments.lr)
+
+        # train
+        trainer.train(train_loader=train_loader, epochs=arguments.epochs, test_loader=test_loader)
     elif arguments.validation:
         pass
     else:
@@ -31,12 +70,15 @@ if __name__ == '__main__':
 
     # lstm
     parser.add_argument("--lstm_hid", help="number of lstm hidden unit", type=int, default=64)
-    parser.add_argument("-time_step", help="number of time step", type=int, default=10)
+    parser.add_argument("--time_step", help="number of time step", type=int, default=10)
 
     # learning
     parser.add_argument("--batch_size", help="determine the batch size", type=int, default=64)
     parser.add_argument("--lr", help="learning rate", type=float, default=1e-3)
     parser.add_argument("--epochs", help="number of epochs", type=int, default=100)
+    parser.add_argument("--train_size", help="training size percentage", type=float, default=0.7)
+    parser.add_argument("--test_size", help="test size percentage", type=float, default=0.3)
+    parser.add_argument("--n_worker", help="number of workers", type=int, default=4)
 
     args = parser.parse_args()
 

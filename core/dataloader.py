@@ -91,8 +91,8 @@ class StockPriceDataset(Dataset):
         return torch.from_numpy(self._data[idx, ...]), torch.from_numpy(self._true[idx,...])
 
 
-if __name__ == '__main__':
-    filename = "/home/lezarus/Documents/Project/cnn_lstm/data/dataset/000001.SS.csv"
-    dataset = StockPriceDataset(filepath=filename, time_step=10)
-
-    print(dataset[1])
+# if __name__ == '__main__':
+#     filename = "/home/lezarus/Documents/Project/cnn_lstm/data/dataset/000001.SS.csv"
+#     dataset = StockPriceDataset(filepath=filename, time_step=10)
+#
+#     print(dataset[1])
