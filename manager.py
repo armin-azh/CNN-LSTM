@@ -2,7 +2,13 @@ from argparse import ArgumentParser, Namespace
 
 
 def main(arguments: Namespace):
-    pass
+
+    if arguments.train:
+        pass
+    elif arguments.validation:
+        pass
+    else:
+        print("[Failed] you had selected a wrong option")
 
 
 if __name__ == '__main__':
