@@ -1,5 +1,8 @@
 from torch import nn
 from torch import Tensor
+import torch
+
+from settings import has_cuda
 
 from torchsummary import summary
 
@@ -9,23 +12,30 @@ class CnnLSTM(nn.Module):
                  lstm_hidden_unit: int, n_features: int):
         super(CnnLSTM, self).__init__()
 
-        self._net = nn.Sequential(
-            nn.Conv1d(in_channels=n_features, out_channels=out_conv_filters, kernel_size=conv_kernel,
-                      padding=conv_padding),
-            nn.Tanh(),
+        device = torch.device("cuda") if has_cuda else torch.device("cpu")
 
-            nn.MaxPool1d(kernel_size=pool_size),
-            nn.ReLU(inplace=True),
-
-            nn.LSTM(batch_first=True, hidden_size=lstm_hidden_unit, input_size=10, num_layers=1, bidirectional=False),
-            nn.Tanh(),
-
-            nn.Linear(in_features=32 * 64, out_features=1)
-
-        )
+        self._conv = nn.Conv1d(in_channels=n_features, out_channels=out_conv_filters, kernel_size=conv_kernel,
+                               padding=conv_padding, device=device)
+        self._tanh = nn.Tanh()
+        self._max_pool = nn.MaxPool1d(kernel_size=pool_size)
+        self._relu = nn.ReLU(inplace=True)
+        self._lstm = nn.LSTM(batch_first=True, hidden_size=lstm_hidden_unit, input_size=10, num_layers=1,
+                             bidirectional=False,
+                             device=device)
+        self._linear = nn.Linear(in_features=32 * 64, out_features=1, device=device)
+        self._flatten = nn.Flatten()
 
     def forward(self, x: Tensor) -> Tensor:
-        return self._net(x)
+        x = self._conv(x)
+        x = self._tanh(x)
+        x = self._max_pool(x)
+        x = self._relu(x)
+        x = self._lstm(x)
+        x = self._tanh(x[0])
+        x = self._flatten(x)
+        x = self._linear(x)
+
+        return x
 
 
 # if __name__ == '__main__':

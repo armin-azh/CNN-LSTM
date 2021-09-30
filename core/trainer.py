@@ -1,4 +1,5 @@
 from typing import Union
+import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from torch.optim import Adam
@@ -22,17 +23,35 @@ class CnnLstmTrainer:
             self._model.cuda()
 
         self._opt = Adam(self._model.parameters(), lr=lr)
-        self.criterion = L1Loss()
+        self._criterion = L1Loss()
 
     def train(self, train_loader: DataLoader, epochs: int, test_loader: Union[DataLoader, None]):
         print(f'[Train] Start to train')
 
+        total_loss = []
+        # total_acc = []
+
         for epoch in range(epochs):
+
+            tm_loss = []
+            # tm_acc = []
+
             for idx, (x, y) in enumerate(train_loader):
+                x = torch.transpose(x, dim0=1, dim1=2)
 
                 if has_cuda:
-                    x.cuda()
-                    y.cuda()
 
+                    x = x.float().cuda()
+                    y = y.float().cuda()
+
+                # # update
+                self._opt.zero_grad()
+                pred = self._model(x)
+
+                loss = self._criterion(pred, y)
+                loss.backward()
+                self._opt.step()
+                tm_loss.append(loss.item())
+            total_loss.append(np.mean(tm_loss))
             if epoch % 10 == 0 and epoch > 0:
-                print(f"[{epoch + 1}/{epochs}] Epoch | Acc:{None}, Loss:{None}")
+                print(f"[{epoch + 1}/{epochs}] Epoch | Loss:{total_loss[-1]}")

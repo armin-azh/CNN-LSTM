@@ -88,7 +88,7 @@ class StockPriceDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        return torch.from_numpy(self._data[idx, ...]), torch.from_numpy(self._true[idx,...])
+        return torch.from_numpy(self._data[idx, ...]), torch.from_numpy(np.expand_dims(self._true[idx,...],axis=-1))
 
 
 # if __name__ == '__main__':
