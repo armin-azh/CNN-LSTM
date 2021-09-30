@@ -7,10 +7,10 @@ warnings.simplefilter(action='ignore', category=SettingWithCopyWarning)
 import pandas as pd
 import numpy as np
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 
-from settings import label_column_name
+# from settings import label_column_name
 
 
 class StockPriceDataset(Dataset):
