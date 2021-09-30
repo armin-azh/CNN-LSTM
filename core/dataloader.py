@@ -88,9 +88,11 @@ class StockPriceDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        return self._data[idx, ...], self._true[idx]
+        return torch.from_numpy(self._data[idx, ...]), torch.from_numpy(self._true[idx,...])
 
 
 if __name__ == '__main__':
     filename = "/home/lezarus/Documents/Project/cnn_lstm/data/dataset/000001.SS.csv"
     dataset = StockPriceDataset(filepath=filename, time_step=10)
+
+    print(dataset[1])
