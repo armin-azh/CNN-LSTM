@@ -35,6 +35,10 @@ def main(arguments: Namespace):
                                      test=True,
                                      save_plot=save_plot)
 
+        scale_conf = {
+            "std": test_set.std_scale,
+            "mean": test_set.mean_scale
+        }
         print(f"[Train] Train: {len(training_set)} samples\tTest: {len(test_set)} samples")
 
         train_loader = DataLoader(dataset=training_set,
@@ -56,7 +60,11 @@ def main(arguments: Namespace):
                                  n_features=5, lr=arguments.lr)
 
         # train
-        trainer.train(train_loader=train_loader, epochs=arguments.epochs, test_loader=test_loader, save_path=run_dir)
+        trainer.train(train_loader=train_loader,
+                      epochs=arguments.epochs,
+                      test_loader=test_loader,
+                      save_path=run_dir,
+                      scale=scale_conf)
     elif arguments.validation:
         pass
     else:

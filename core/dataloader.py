@@ -132,6 +132,14 @@ class StockPriceDataset(Dataset):
         return (std.Open, std.High, std.Low, std.Close, std.Volume), (
             mean.Open, mean.High, mean.Low, mean.Close, mean.Volume)
 
+    @property
+    def std_scale(self):
+        return self._std_close
+
+    @property
+    def mean_scale(self):
+        return self._mean_close
+
     def __len__(self):
         return len(self._data)
 

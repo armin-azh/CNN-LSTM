@@ -1,6 +1,7 @@
 from typing import Union
 from pathlib import Path
 import numpy as np
+import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 from torch.optim import Adam
@@ -31,7 +32,8 @@ class CnnLstmTrainer:
         self._opt = Adam(self._model.parameters(), lr=lr)
         self._criterion = MSELoss()
 
-    def train(self, train_loader: DataLoader, epochs: int, test_loader: Union[DataLoader, None], save_path: Path):
+    def train(self, train_loader: DataLoader, epochs: int, test_loader: Union[DataLoader, None], save_path: Path,
+              scale: dict):
         print(f'[Train] Start to train')
 
         total_loss = []
@@ -78,4 +80,61 @@ class CnnLstmTrainer:
         # end save loss plot
 
         # start test
+
+        test_loss = []
+        val_pred = []
+        val_true = []
+        with torch.no_grad():
+            for idx, (x, y) in enumerate(test_loader):
+                x = torch.transpose(x, dim0=1, dim1=2)
+
+                if has_cuda:
+                    x = x.float().cuda()
+                    y = y.float().cuda()
+
+                # # update
+                pred = self._model(x)
+
+                loss = self._criterion(pred, y)
+
+                val_pred.append(pred.cpu().numpy())
+                val_true.append(y.cpu().numpy())
+                test_loss.append(loss.item())
+
+        # start save loss plot
+        test_loss = np.array(test_loss)
+        plt.figure(figsize=(15, 9))
+        plt.plot(np.arange(len(test_loss)) + 1, test_loss)
+        plt.title("Test CNN-LSTM Loss", fontsize=18, fontweight='bold')
+        plt.xlabel('# Batches', fontsize=18)
+        plt.ylabel('Loss', fontsize=18)
+        plt.savefig(str(save_path.joinpath("plot").joinpath("test_loss.png")))
+        # end save loss plot
+
+        val_pred = np.concatenate(val_pred, axis=0)
+        val_true = np.concatenate(val_true, axis=0)
+
+        std = scale["std"]
+        mean = scale["mean"]
+
+        val_pred = np.squeeze(std * val_pred + mean,axis=-1)
+        val_true = np.squeeze(std * val_true + mean,axis=-1)
+
+        predict = pd.DataFrame(val_pred)
+        original = pd.DataFrame(val_true)
+
+        # start save prediction
+        plt.figure(figsize=(15, 9))
+        ax = sns.lineplot(x=original.index, y=original[0], label="Data", color='royalblue')
+        ax = sns.lineplot(x=predict.index, y=predict[0], label="Training Prediction (CNN-LSTM)", color='tomato')
+        ax.set_title('Test Stock price', size=14, fontweight='bold')
+        ax.set_xlabel("Days", size=14)
+        ax.set_ylabel("Cost (USD)", size=14)
+        ax.set_xticklabels('', size=10)
+
+        plt.savefig(str(save_path.joinpath("plot").joinpath("prediction.png")))
+        # end save loss plot
+
         # end test
+        print(f"[Test] Final Test Loss: {test_loss[-1]}")
+
