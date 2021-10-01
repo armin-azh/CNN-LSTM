@@ -1,26 +1,39 @@
 from argparse import ArgumentParser, Namespace
+from datetime import datetime
 from core.dataloader import StockPriceDataset
 from core.trainer import CnnLstmTrainer
 
 from torch.utils.data import DataLoader
 
+from settings import output_dir
+
 
 def main(arguments: Namespace):
     if arguments.train:
+
+        _cu = datetime.strftime(datetime.now(), '%Y%m%d-%H%M%S')
+        run_dir = output_dir.joinpath(_cu)
+        run_dir.mkdir(parents=True, exist_ok=True)
+
+        save_plot = run_dir.joinpath("plot")
+        save_plot.mkdir(parents=True, exist_ok=True)
+
         print(f"Training is starting ...")
         print(f"[Train] Loading the dataset")
         training_set = StockPriceDataset(train_size=arguments.train_size,
                                          filepath=arguments.in_file,
                                          test_size=arguments.test_size,
                                          phase="train",
-                                         time_step=arguments.time_step)
+                                         time_step=arguments.time_step,
+                                         save_plot=save_plot)
 
         test_set = StockPriceDataset(train_size=arguments.train_size,
                                      filepath=arguments.in_file,
                                      test_size=arguments.test_size,
                                      phase="train",
                                      time_step=arguments.time_step,
-                                     test=True)
+                                     test=True,
+                                     save_plot=save_plot)
 
         print(f"[Train] Train: {len(training_set)} samples\tTest: {len(test_set)} samples")
 
@@ -43,7 +56,7 @@ def main(arguments: Namespace):
                                  n_features=5, lr=arguments.lr)
 
         # train
-        trainer.train(train_loader=train_loader, epochs=arguments.epochs, test_loader=test_loader)
+        trainer.train(train_loader=train_loader, epochs=arguments.epochs, test_loader=test_loader, save_path=run_dir)
     elif arguments.validation:
         pass
     else:

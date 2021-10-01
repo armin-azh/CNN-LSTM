@@ -3,18 +3,27 @@ from pandas.core.common import SettingWithCopyWarning
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=SettingWithCopyWarning)
+warnings.simplefilter("ignore", UserWarning)
 
+from pathlib import Path
 import pandas as pd
 import numpy as np
 import torch
 from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+sns.set_style("darkgrid")
+
+
 # from settings import label_column_name
 
 
 class StockPriceDataset(Dataset):
-    def __init__(self, filepath: str, time_step, test: bool = False, train_size: float = 0.7, test_size: float = 0.3,
+    def __init__(self, filepath: str, time_step, save_plot: Path, test: bool = False, train_size: float = 0.7,
+                 test_size: float = 0.3,
                  phase: str = "train"):
 
         self._data = None
@@ -22,14 +31,45 @@ class StockPriceDataset(Dataset):
         self._data_df = None
         data_df = pd.read_csv(filepath)
         data_df = data_df.drop(labels=np.where(data_df.isnull().any(axis=1) == True)[0], axis=0)
-        data_df = data_df.drop(labels=["Date", "Adj Close"], axis=1)
+        data_df = data_df.drop(labels="Adj Close", axis=1)
+
+        if not test:
+            plt.figure(figsize=(15, 9))
+            plt.plot(data_df[['Close']])
+            plt.xticks(range(0, data_df.shape[0], 500), data_df['Date'].loc[::500], rotation=45)
+            plt.title("Stock Price", fontsize=18, fontweight='bold')
+            plt.xlabel('Date', fontsize=18)
+            plt.ylabel('Close Price (USD)', fontsize=18)
+            plt.savefig(str(save_plot.joinpath("whole_data.png")))
+
         data_df = data_df.loc[(data_df["Volume"] != "0") & (data_df["Volume"] != 0)]
 
         if phase == "train":
             train_df, valid_df = train_test_split(data_df, test_size=test_size, train_size=train_size, shuffle=False)
             if not test:
+
+                plt.figure(figsize=(15, 9))
+                plt.plot(train_df[['Close']])
+                plt.xticks(range(0, train_df.shape[0], 500), train_df['Date'].loc[::500], rotation=45)
+                plt.title("Train Stock Price", fontsize=18, fontweight='bold')
+                plt.xlabel('Date', fontsize=18)
+                plt.ylabel('Close Price (USD)', fontsize=18)
+                plt.savefig(str(save_plot.joinpath("train_data.png")))
+
+                train_df = train_df.drop(labels="Date", axis=1)
+
                 self._data_df = train_df
             else:
+
+                plt.figure(figsize=(15, 9))
+                plt.plot(valid_df[['Close']])
+                plt.xticks(range(0, valid_df.shape[0], 500), valid_df['Date'].loc[::500], rotation=45)
+                plt.title("Test Stock Price", fontsize=18, fontweight='bold')
+                plt.xlabel('Date', fontsize=18)
+                plt.ylabel('Close Price (USD)', fontsize=18)
+                plt.savefig(str(save_plot.joinpath("test_data.png")))
+
+                valid_df = valid_df.drop(labels="Date", axis=1)
                 self._data_df = valid_df
         elif phase == "test":
             self._data_df = data_df
@@ -52,22 +92,33 @@ class StockPriceDataset(Dataset):
         self._data = self._data_df.copy().to_numpy()
 
         # fix the tensor
-        last_day_idx = time_step - 1
-        n_sample = self._data.shape[0]
-        c_sample = n_sample // time_step
-        r_sample = n_sample % time_step
 
-        c_temp = self._data[:c_sample * time_step, ...].reshape((-1, time_step, 5))
-        c_true_temp = self._true[:c_sample * time_step].reshape((-1, time_step))[:, last_day_idx]
+        tm_data = []
+        tm_label = []
 
-        if r_sample > 0:
-            r_temp = self._data[n_sample - time_step:, ...].reshape(-1, time_step, 5)
-            r_true_temp = self._true[n_sample - time_step:].reshape(-1, time_step)[:, last_day_idx]
-            c_temp = np.concatenate([c_temp, r_temp], axis=0)
-            c_true_temp = np.concatenate([c_true_temp, r_true_temp], axis=0)
+        for idx in range(len(self._data) - time_step):
+            tm_data.append(self._data[idx:idx + time_step, ...])
+            tm_label.append(self._true[idx + time_step])
 
-        self._data = c_temp
-        self._true = c_true_temp
+
+        self._data = np.array(tm_data)
+        self._true = np.array(tm_label)
+        # last_day_idx = time_step - 1
+        # n_sample = self._data.shape[0]
+        # c_sample = n_sample // time_step
+        # r_sample = n_sample % time_step
+        #
+        # c_temp = self._data[:c_sample * time_step, ...].reshape((-1, time_step, 5))
+        # c_true_temp = self._true[:c_sample * time_step].reshape((-1, time_step))[:, last_day_idx]
+        #
+        # if r_sample > 0:
+        #     r_temp = self._data[n_sample - time_step:, ...].reshape(-1, time_step, 5)
+        #     r_true_temp = self._true[n_sample - time_step:].reshape(-1, time_step)[:, last_day_idx]
+        #     c_temp = np.concatenate([c_temp, r_temp], axis=0)
+        #     c_true_temp = np.concatenate([c_true_temp, r_true_temp], axis=0)
+        #
+        # self._data = c_temp
+        # self._true = c_true_temp
 
     @staticmethod
     def z_score(col_val, std_val, mean_val):
@@ -88,11 +139,12 @@ class StockPriceDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        return torch.from_numpy(self._data[idx, ...]), torch.from_numpy(np.expand_dims(self._true[idx,...],axis=-1))
+        return torch.from_numpy(self._data[idx, ...]), torch.from_numpy(np.expand_dims(self._true[idx, ...], axis=-1))
 
 
 # if __name__ == '__main__':
+#     save_path = Path("/home/lezarus/Documents/Project/cnn_lstm/result")
 #     filename = "/home/lezarus/Documents/Project/cnn_lstm/data/dataset/000001.SS.csv"
-#     dataset = StockPriceDataset(filepath=filename, time_step=10)
+#     dataset = StockPriceDataset(filepath=filename, time_step=10, save_plot=save_path)
 #
-#     print(dataset[1])
+#     print(dataset[0])
