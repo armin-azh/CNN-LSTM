@@ -93,6 +93,9 @@ if __name__ == '__main__':
     parser.add_argument("--lstm_hid", help="number of lstm hidden unit", type=int, default=64)
     parser.add_argument("--time_step", help="number of time step", type=int, default=10)
 
+    # loss
+    parser.add_argument("--loss", help="determine loss method", default="mae", type=str, choices=["rmse", "mae", "r"])
+
     # learning
     parser.add_argument("--batch_size", help="determine the batch size", type=int, default=64)
     parser.add_argument("--lr", help="learning rate", type=float, default=1e-3)

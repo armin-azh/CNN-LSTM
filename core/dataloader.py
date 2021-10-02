@@ -45,7 +45,9 @@ class StockPriceDataset(Dataset):
         data_df = data_df.loc[(data_df["Volume"] != "0") & (data_df["Volume"] != 0)]
 
         if phase == "train":
-            train_df, valid_df = train_test_split(data_df, test_size=test_size, train_size=train_size, shuffle=False)
+            # train_df, valid_df = train_test_split(data_df, test_size=test_size, train_size=train_size, shuffle=False)
+            train_df = data_df.iloc[:-300]
+            valid_df = data_df.iloc[-300:]
             if not test:
 
                 plt.figure(figsize=(15, 9))
@@ -100,9 +102,10 @@ class StockPriceDataset(Dataset):
             tm_data.append(self._data[idx:idx + time_step, ...])
             tm_label.append(self._true[idx + time_step])
 
-
         self._data = np.array(tm_data)
         self._true = np.array(tm_label)
+
+        print(len(self._data))
         # last_day_idx = time_step - 1
         # n_sample = self._data.shape[0]
         # c_sample = n_sample // time_step
@@ -148,7 +151,6 @@ class StockPriceDataset(Dataset):
             idx = idx.tolist()
 
         return torch.from_numpy(self._data[idx, ...]), torch.from_numpy(np.expand_dims(self._true[idx, ...], axis=-1))
-
 
 # if __name__ == '__main__':
 #     save_path = Path("/home/lezarus/Documents/Project/cnn_lstm/result")
