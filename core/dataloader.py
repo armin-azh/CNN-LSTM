@@ -22,7 +22,10 @@ sns.set_style("darkgrid")
 
 
 class StockPriceDataset(Dataset):
-    def __init__(self, filepath: str, time_step, save_plot: Path, test: bool = False, train_size: float = 0.7,
+    def __init__(self, filepath: str, time_step, save_plot: Path,
+                 train: bool,
+                 validation: bool,
+                 train_size: float = 0.7,
                  test_size: float = 0.3,
                  phase: str = "train"):
 
@@ -33,7 +36,7 @@ class StockPriceDataset(Dataset):
         data_df = data_df.drop(labels=np.where(data_df.isnull().any(axis=1) == True)[0], axis=0)
         data_df = data_df.drop(labels="Adj Close", axis=1)
 
-        if not test:
+        if train:
             plt.figure(figsize=(15, 9))
             plt.plot(data_df[['Close']])
             plt.xticks(range(0, data_df.shape[0], 500), data_df['Date'].loc[::500], rotation=45)
@@ -45,10 +48,11 @@ class StockPriceDataset(Dataset):
         data_df = data_df.loc[(data_df["Volume"] != "0") & (data_df["Volume"] != 0)]
 
         if phase == "train":
-            # train_df, valid_df = train_test_split(data_df, test_size=test_size, train_size=train_size, shuffle=False)
             train_df = data_df.iloc[:-510]
-            valid_df = data_df.iloc[-510:]
-            if not test:
+            test_df = data_df.iloc[-510:]
+            train_df, valid_df = train_test_split(train_df, test_size=test_size, train_size=train_size, shuffle=False)
+
+            if train:
 
                 plt.figure(figsize=(15, 9))
                 plt.plot(train_df[['Close']])
@@ -61,18 +65,33 @@ class StockPriceDataset(Dataset):
                 train_df = train_df.drop(labels="Date", axis=1)
 
                 self._data_df = train_df
-            else:
 
+            elif validation:
                 plt.figure(figsize=(15, 9))
                 plt.plot(valid_df[['Close']])
                 plt.xticks(range(0, valid_df.shape[0], 500), valid_df['Date'].loc[::500], rotation=45)
+                plt.title("Validation Stock Price", fontsize=18, fontweight='bold')
+                plt.xlabel('Date', fontsize=18)
+                plt.ylabel('Close Price (USD)', fontsize=18)
+                plt.savefig(str(save_plot.joinpath("validation_data.png")))
+
+                valid_df = valid_df.drop(labels="Date", axis=1)
+
+                self._data_df = valid_df
+
+            else:
+
+                plt.figure(figsize=(15, 9))
+                plt.plot(test_df[['Close']])
+                plt.xticks(range(0, test_df.shape[0], 500), test_df['Date'].loc[::500], rotation=45)
                 plt.title("Test Stock Price", fontsize=18, fontweight='bold')
                 plt.xlabel('Date', fontsize=18)
                 plt.ylabel('Close Price (USD)', fontsize=18)
                 plt.savefig(str(save_plot.joinpath("test_data.png")))
 
-                valid_df = valid_df.drop(labels="Date", axis=1)
-                self._data_df = valid_df
+                test_df = test_df.drop(labels="Date", axis=1)
+                self._data_df = test_df
+
         elif phase == "test":
             self._data_df = data_df
         else:

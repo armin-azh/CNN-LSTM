@@ -27,29 +27,47 @@ def main(arguments: Namespace):
                                          test_size=arguments.test_size,
                                          phase="train",
                                          time_step=arguments.time_step,
-                                         save_plot=save_plot)
+                                         save_plot=save_plot,
+                                         train=True,
+                                         validation=False)
+
+        validation_set = StockPriceDataset(train_size=arguments.train_size,
+                                           filepath=arguments.in_file,
+                                           test_size=arguments.test_size,
+                                           phase="train",
+                                           train=False,
+                                           validation=True,
+                                           time_step=arguments.time_step,
+                                           save_plot=save_plot)
 
         test_set = StockPriceDataset(train_size=arguments.train_size,
                                      filepath=arguments.in_file,
                                      test_size=arguments.test_size,
                                      phase="train",
                                      time_step=arguments.time_step,
-                                     test=True,
+                                     train=False,
+                                     validation=False,
                                      save_plot=save_plot)
 
         scale_conf = {
             "std": test_set.std_scale,
             "mean": test_set.mean_scale
         }
-        print(f"[Train] Train: {len(training_set)} samples\tTest: {len(test_set)} samples")
+        print(
+            f"[Train] Train: {len(training_set)} samples\tValidation: {len(validation_set)} samples\tTest: {len(test_set)} samples")
 
         train_loader = DataLoader(dataset=training_set,
                                   batch_size=arguments.batch_size,
                                   shuffle=False,
                                   num_workers=arguments.n_worker)
 
+        validation_loader = DataLoader(dataset=validation_set,
+                                       batch_size=arguments.batch_size,
+                                       shuffle=False,
+                                       num_workers=arguments.n_worker)
+
         test_loader = DataLoader(dataset=test_set,
-                                 batch_size=arguments.batch_size,
+                                 batch_size=len(test_set),
                                  shuffle=False,
                                  num_workers=arguments.n_worker)
 
@@ -67,7 +85,8 @@ def main(arguments: Namespace):
                       epochs=arguments.epochs,
                       test_loader=test_loader,
                       save_path=run_dir,
-                      scale=scale_conf)
+                      scale=scale_conf,
+                      validation_loader=validation_loader)
     elif arguments.validation:
         pass
     else:
@@ -103,8 +122,8 @@ if __name__ == '__main__':
     parser.add_argument("--batch_size", help="determine the batch size", type=int, default=64)
     parser.add_argument("--lr", help="learning rate", type=float, default=1e-3)
     parser.add_argument("--epochs", help="number of epochs", type=int, default=500)
-    parser.add_argument("--train_size", help="training size percentage", type=float, default=0.7)
-    parser.add_argument("--test_size", help="test size percentage", type=float, default=0.3)
+    parser.add_argument("--train_size", help="training size percentage", type=float, default=0.9)
+    parser.add_argument("--test_size", help="test size percentage", type=float, default=0.1)
     parser.add_argument("--n_worker", help="number of workers", type=int, default=4)
 
     args = parser.parse_args()
