@@ -7,6 +7,8 @@ from torch.utils.data import DataLoader
 
 from settings import output_dir
 
+from core.loss import LOSS_FACTORY
+
 
 def main(arguments: Namespace):
     if arguments.train:
@@ -57,7 +59,8 @@ def main(arguments: Namespace):
                                  pool_size=arguments.pool_size,
                                  pool_padding=arguments.pool_padding,
                                  lstm_hidden_unit=arguments.lstm_hid,
-                                 n_features=5, lr=arguments.lr)
+                                 n_features=5, lr=arguments.lr,
+                                 loss=LOSS_FACTORY[arguments.loss])
 
         # train
         trainer.train(train_loader=train_loader,
