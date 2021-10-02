@@ -105,7 +105,6 @@ class StockPriceDataset(Dataset):
         self._data = np.array(tm_data)
         self._true = np.array(tm_label)
 
-        print(len(self._data))
         # last_day_idx = time_step - 1
         # n_sample = self._data.shape[0]
         # c_sample = n_sample // time_step

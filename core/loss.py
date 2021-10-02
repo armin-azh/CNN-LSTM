@@ -17,9 +17,11 @@ class RLoss(nn.Module):
 
     def forward(self, y_hat, target):
         target_mean = torch.mean(target)
-        sum_tot = torch.sum((target - target_mean) ** 2)
-        sum_res = torch.sum((target - y_hat) ** 2)
-        return 1 - (sum_res / sum_tot)
+        n = target.shape[0]
+        sum_tot = torch.sum((target - y_hat) ** 2)
+        sum_reg = torch.sum((y_hat - target_mean) ** 2)
+        sum_tot = sum_tot+sum_reg
+        return 1 - ((sum_reg/n) / (sum_tot/n))
 
 
 LOSS_FACTORY = {
