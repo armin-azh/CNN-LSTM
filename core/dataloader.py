@@ -46,8 +46,8 @@ class StockPriceDataset(Dataset):
 
         if phase == "train":
             # train_df, valid_df = train_test_split(data_df, test_size=test_size, train_size=train_size, shuffle=False)
-            train_df = data_df.iloc[:-300]
-            valid_df = data_df.iloc[-300:]
+            train_df = data_df.iloc[:-510]
+            valid_df = data_df.iloc[-510:]
             if not test:
 
                 plt.figure(figsize=(15, 9))

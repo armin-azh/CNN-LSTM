@@ -57,7 +57,6 @@ class CnnLstmTrainer:
                 # # update
                 self._opt.zero_grad()
                 pred = self._model(x)
-
                 loss = self._criterion(pred, y)
                 loss.backward()
                 self._opt.step()

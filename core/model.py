@@ -24,6 +24,7 @@ class CnnLSTM(nn.Module):
                              device=device)
         self._linear = nn.Linear(in_features=32 * 64, out_features=1, device=device)
         self._flatten = nn.Flatten()
+        self._sigmoid = nn.Sigmoid()
 
     def forward(self, x: Tensor) -> Tensor:
         x = self._conv(x)
@@ -34,7 +35,6 @@ class CnnLSTM(nn.Module):
         x = self._tanh(x[0])
         x = self._flatten(x)
         x = self._linear(x)
-
         return x
 
 

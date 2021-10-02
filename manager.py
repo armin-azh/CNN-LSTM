@@ -102,7 +102,7 @@ if __name__ == '__main__':
     # learning
     parser.add_argument("--batch_size", help="determine the batch size", type=int, default=64)
     parser.add_argument("--lr", help="learning rate", type=float, default=1e-3)
-    parser.add_argument("--epochs", help="number of epochs", type=int, default=100)
+    parser.add_argument("--epochs", help="number of epochs", type=int, default=500)
     parser.add_argument("--train_size", help="training size percentage", type=float, default=0.7)
     parser.add_argument("--test_size", help="test size percentage", type=float, default=0.3)
     parser.add_argument("--n_worker", help="number of workers", type=int, default=4)
