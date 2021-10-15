@@ -8,6 +8,9 @@ from torch.utils.data import DataLoader
 from settings import output_dir
 
 from core.loss import LOSS_FACTORY
+from core.utils import preprocessing
+
+from pathlib import Path
 
 
 def main(arguments: Namespace):
@@ -29,7 +32,8 @@ def main(arguments: Namespace):
                                          time_step=arguments.time_step,
                                          save_plot=save_plot,
                                          train=True,
-                                         validation=False)
+                                         validation=False,
+                                         col_name=arguments.col_name)
 
         validation_set = StockPriceDataset(train_size=arguments.train_size,
                                            filepath=arguments.in_file,
@@ -38,7 +42,8 @@ def main(arguments: Namespace):
                                            train=False,
                                            validation=True,
                                            time_step=arguments.time_step,
-                                           save_plot=save_plot)
+                                           save_plot=save_plot,
+                                           col_name=arguments.col_name)
 
         test_set = StockPriceDataset(train_size=arguments.train_size,
                                      filepath=arguments.in_file,
@@ -47,11 +52,12 @@ def main(arguments: Namespace):
                                      time_step=arguments.time_step,
                                      train=False,
                                      validation=False,
-                                     save_plot=save_plot)
+                                     save_plot=save_plot,
+                                     col_name=arguments.col_name)
 
         scale_conf = {
             "std": test_set.std_scale,
-            "mean": test_set.mean_scale
+            "mean": test_set.mean_scale,
         }
         print(
             f"[Train] Train: {len(training_set)} samples\tValidation: {len(validation_set)} samples\tTest: {len(test_set)} samples")
@@ -77,8 +83,10 @@ def main(arguments: Namespace):
                                  pool_size=arguments.pool_size,
                                  pool_padding=arguments.pool_padding,
                                  lstm_hidden_unit=arguments.lstm_hid,
-                                 n_features=5, lr=arguments.lr,
-                                 loss=LOSS_FACTORY[arguments.loss])
+                                 n_features=arguments.n_features,
+                                 lr=arguments.lr,
+                                 loss=LOSS_FACTORY[arguments.loss],
+                                 time_step=arguments.time_step)
 
         # train
         trainer.train(train_loader=train_loader,
@@ -87,8 +95,9 @@ def main(arguments: Namespace):
                       save_path=run_dir,
                       scale=scale_conf,
                       validation_loader=validation_loader)
-    elif arguments.validation:
-        pass
+    elif arguments.preprocessing:
+        i_file = Path(arguments.in_file)
+        preprocessing(i_file)
     else:
         print("[Failed] you had selected a wrong option")
 
@@ -99,9 +108,12 @@ if __name__ == '__main__':
     parser.add_argument("--validation", help="enable validation process", action="store_true")
     parser.add_argument("--input", dest="in_file", help="input file to train or validation", type=str, required=True)
     parser.add_argument("--model", help="saved model state dic for validation", type=str, default="")
+    parser.add_argument("--col_name", help="label column name", type=str, default="")
+    parser.add_argument("--preprocessing", help="process the given data", action="store_true")
 
     # hyper parameter
     # convolution
+    parser.add_argument("--n_features", help="number of features", type=int, default=7)
     parser.add_argument("--conv_filters", help="number of convolution filters", type=int, default=32)
     parser.add_argument("--conv_kernel", help="convolution kernel size dimension", type=int, default=1)
     parser.add_argument("--conv_padding", help="convolution padding type", type=str, default="same",
