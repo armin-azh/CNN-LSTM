@@ -6,7 +6,7 @@
     
     conda create -n your_env_name python=3.7
 ### 3. Activate the environment
-    conda acrivate your_env_name
+    conda activate your_env_name
 ### 4. Install Packages
 #### 4.1 Install Torch
 ##### 4.1.1 GPU support
@@ -23,7 +23,7 @@
     python project_root/manage.py --train --input "path/to/processed_file.csv" --col_name "Predict Column name" --time_step 10 --epochs 500 
 
 #### 5.3 Test
-    python project_root/manage.py --model "path/to/model.pth"
+    python project_root/manage.py --model "path/to/model.pth" --input "path/to/processed_file.csv" --time_step 10 --col_name Close
 
 
 ## System Specificity

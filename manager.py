@@ -4,11 +4,14 @@ from core.dataloader import StockPriceDataset
 from core.trainer import CnnLstmTrainer
 
 from torch.utils.data import DataLoader
+import torch
 
-from settings import output_dir
+from settings import output_dir, has_cuda
 
 from core.loss import LOSS_FACTORY
 from core.utils import preprocessing
+from core.dataloader import StockPriceDataset
+from core.model import CnnLSTM
 
 from pathlib import Path
 
@@ -98,6 +101,43 @@ def main(arguments: Namespace):
     elif arguments.preprocessing:
         i_file = Path(arguments.in_file)
         preprocessing(i_file)
+    elif arguments.model != "":
+        i_file = Path(arguments.in_file)
+        test_ds = StockPriceDataset(filepath=str(i_file),
+                                    time_step=arguments.time_step,
+                                    train=False,
+                                    validation=False,
+                                    col_name=arguments.col_name,
+                                    phase="test",
+                                    save_plot=None)
+
+        state_dic = torch.load(arguments.model)
+        model = CnnLSTM(arguments.conv_filters, arguments.conv_kernel, arguments.conv_padding, arguments.pool_size,
+                        arguments.pool_padding, arguments.lstm_hid,
+                        arguments.n_features, time_step=arguments.time_step)
+        if has_cuda:
+            model.cuda()
+        model.load_state_dict(state_dict=state_dic)
+
+        last_day = test_ds[-1][0]
+        last_day = torch.unsqueeze(last_day, dim=0)
+        last_day = torch.transpose(last_day, dim0=1, dim1=2)
+
+        std = test_ds.std_scale
+        mean = test_ds.mean_scale
+
+        if has_cuda:
+            last_day = last_day.float().cuda()
+
+        model.eval()
+        with torch.no_grad():
+            pred = model(last_day)
+            pred = pred * std + mean
+
+            print("Next Day Price: ", pred.cpu().numpy())
+
+
+
     else:
         print("[Failed] you had selected a wrong option")
 

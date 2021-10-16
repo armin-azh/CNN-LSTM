@@ -5,6 +5,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=SettingWithCopyWarning)
 warnings.simplefilter("ignore", UserWarning)
 
+from typing import Union
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -20,7 +21,7 @@ sns.set_style("darkgrid")
 
 
 class StockPriceDataset(Dataset):
-    def __init__(self, filepath: str, time_step, save_plot: Path,
+    def __init__(self, filepath: str, time_step, save_plot: Union[Path, None],
                  train: bool,
                  validation: bool,
                  col_name: str,
